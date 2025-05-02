@@ -1,0 +1,19 @@
+{
+  "name": "whmcs-exporter",
+  "version": "1.0.0",
+  "description": "Prometheus exporter for WHMCS using its API",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SinaAboutalebi/WHMCS-Exporter.git"
+  },
+  "author": "SinaAboutalebi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SinaAboutalebi/WHMCS-Exporter/issues"
+  },
+  "homepage": "https://github.com/SinaAboutalebi/WHMCS-Exporter#readme"
+}
