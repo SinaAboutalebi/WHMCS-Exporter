@@ -12,5 +12,5 @@ app.get('/metrics', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`WHMCS Prometheus exporter listening on port ${PORT}`);
+  console.log(`[🟢] WHMCS Prometheus exporter listening on http://localhost:${PORT}`);
 });
