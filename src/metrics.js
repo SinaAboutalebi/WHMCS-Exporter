@@ -13,8 +13,11 @@ const {
 const Registry = client.Registry;
 const register = new Registry();
 
+// ==============================
+// Metrics Definition
+// ==============================
 const metrics = {
-  // Financial Stats
+  // ----- Financial Stats -----
   incomeToday: new client.Gauge({
     name: "whmcs_income_today",
     help: "Income today",
@@ -32,7 +35,7 @@ const metrics = {
     help: "Income all time",
   }),
 
-  // Tickets Stats
+  // ----- Ticket Stats -----
   openTickets: new client.Gauge({
     name: "whmcs_open_tickets",
     help: "Number of open tickets",
@@ -58,21 +61,21 @@ const metrics = {
     help: "Number of awaiting reply tickets",
   }),
 
-  // Staff Stats
+  // ----- Staff Stats -----
   staffOnline: new client.Gauge({
     name: "whmcs_staff_online",
     help: "Online staff members",
     labelNames: ["staff_name"],
   }),
 
-  // Departments Awaiting Reply Tickets
+  // ----- Department Tickets Stats -----
   departmentsAwaitingReply: new client.Gauge({
     name: "whmcs_departments_awaiting_reply_tickets",
     help: "Number of tickets awaiting reply in each department",
     labelNames: ["department_name"],
   }),
 
-  // Orders Stats
+  // ----- Orders Stats -----
   orderStatuse: new client.Gauge({
     name: "whmcs_order_statuses",
     help: "Number of orders in each status",
@@ -83,7 +86,7 @@ const metrics = {
     help: "Number of orders pending cancelation",
   }),
 
-  // Domains and Products
+  // ----- Domain & Product Stats -----
   domainsCount: new client.Gauge({
     name: "whmcs_domains_count",
     help: "Number of domains",
@@ -93,13 +96,14 @@ const metrics = {
     help: "Number of products",
   }),
 
-  // Clients Stats
+  // ----- Clients Stats -----
   clientsCount: new client.Gauge({
     name: "whmcs_clients_count",
     help: "Number of clients",
     labelNames: ["status_name"],
   }),
 
+  // ----- Invoice Stats -----
   invoiceStatuses: new client.Gauge({
     name: "whmcs_invoice_statuses",
     help: "Number of invoices in each status",
@@ -107,24 +111,31 @@ const metrics = {
   }),
 };
 
+// ==============================
+// Register All Metrics
+// ==============================
 Object.values(metrics).forEach((metric) => register.registerMetric(metric));
 
+// ==============================
+// Utility Function
+// ==============================
 function parseCurrencyToNumber(input) {
   return parseInt(String(input).replace(/[^0-9]/g, ""), 10);
 }
 
+// ==============================
+// Metrics Collection Function
+// ==============================
 async function collectMetrics() {
   try {
+    // ----- Collect Financial Stats -----
     const totalStats = await getStats();
     metrics.incomeToday.set(parseCurrencyToNumber(totalStats.income_today));
-    metrics.incomeThisMonth.set(
-      parseCurrencyToNumber(totalStats.income_thismonth)
-    );
-    metrics.incomeThisYear.set(
-      parseCurrencyToNumber(totalStats.income_thisyear)
-    );
+    metrics.incomeThisMonth.set(parseCurrencyToNumber(totalStats.income_thismonth));
+    metrics.incomeThisYear.set(parseCurrencyToNumber(totalStats.income_thisyear));
     metrics.incomeAllTime.set(parseCurrencyToNumber(totalStats.income_alltime));
 
+    // ----- Collect Ticket Stats -----
     metrics.openTickets.set(parseInt(totalStats.tickets_open));
     metrics.customerReply.set(parseInt(totalStats.tickets_customerreply));
     metrics.assignedTickets.set(parseInt(totalStats.tickets_assigned));
@@ -133,43 +144,43 @@ async function collectMetrics() {
     metrics.awaitingReply.set(parseInt(totalStats.tickets_awaitingreply));
     metrics.cancelationPending.set(parseInt(totalStats.cancellations_pending));
 
+    // ----- Collect Orders Stats -----
     const ordersStats = await getOrdersStatuses();
     ordersStats.statuses.status.forEach((status) => {
-      const statusName = status.title;
-      const statusCount = parseInt(status.count);
-      metrics.orderStatuse.set({ status_name: statusName }, statusCount);
+      metrics.orderStatuse.set({ status_name: status.title }, parseInt(status.count));
     });
 
+    // ----- Collect Department Stats -----
     const supportDepartmentsStats = await getSupportDepartments();
     supportDepartmentsStats.departments.department.forEach((department) => {
-      const awaitingReply = parseInt(department.awaitingreply);
       metrics.departmentsAwaitingReply.set(
         { department_name: department.name },
-        awaitingReply
+        parseInt(department.awaitingreply)
       );
     });
 
+    // ----- Collect Staff Stats -----
     const staffOnlineStats = await getStaffOnline();
     metrics.staffOnline.reset();
     staffOnlineStats.staffonline.staff.forEach((staff) => {
       metrics.staffOnline.set({ staff_name: staff.adminusername }, 1);
     });
 
+    // ----- Collect Domains and Products Stats -----
     const domainsStat = await getDomains({ limitnum: 1 });
     metrics.domainsCount.set(parseInt(domainsStat.totalresults) || 0);
 
     const productsStat = await getProducts({ limitnum: 1 });
     metrics.productsCount.set(parseInt(productsStat.totalresults) || 0);
 
+    // ----- Collect Client Stats -----
     const clientStatuses = [
       { label: "Total", params: { limitnum: 1 } },
       { label: "Active", params: { limitnum: 1, status: "Active" } },
       { label: "Inactive", params: { limitnum: 1, status: "InActive" } },
       { label: "Closed", params: { limitnum: 1, status: "Closed" } },
     ];
-
     metrics.clientsCount.reset();
-
     for (const { label, params } of clientStatuses) {
       const result = await getClients(params);
       metrics.clientsCount.set(
@@ -178,6 +189,7 @@ async function collectMetrics() {
       );
     }
 
+    // ----- Collect Invoice Stats -----
     const invoiceStatuses = [
       "Paid",
       "Draft",
@@ -188,7 +200,6 @@ async function collectMetrics() {
       "Collections",
     ];
     metrics.invoiceStatuses.reset();
-
     for (const status of invoiceStatuses) {
       const invoiceStat = await getInvoices({ limitnum: 1, status });
       metrics.invoiceStatuses.set(
@@ -197,10 +208,13 @@ async function collectMetrics() {
       );
     }
   } catch (err) {
-    console.error("Error collecting metrics:", err.message);
+    console.error("[🔴] Error collecting metrics:", err.message);
   }
 }
 
+// ==============================
+// Exports
+// ==============================
 module.exports = {
   register,
   collectMetrics,
