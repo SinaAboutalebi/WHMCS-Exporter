@@ -5,12 +5,17 @@ services:
     build: .
     container_name: whmcs-exporter
     ports:
-      - "9200:9200"
+      - ${PORT :-9200}:${PORT :-9200}
     environment:
       - NODE_ENV=production
-      - PORT=9200
+      - PORT=${PORT :-9200}
+      - WHMCS_API_URL=${WHMCS_API_URL}
+      - WHMCS_IDENTIFIER=${WHMCS_IDENTIFIER}
+      - WHMCS_SECRET=${WHMCS_SECRET}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+      - BASIC_AUTH_PASS=${BASIC_AUTH_PASS}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      test: curl --fail http://localhost:${PORT:-9200}/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
