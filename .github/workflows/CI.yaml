@@ -6,13 +6,14 @@ on:
       - main
 
 env:
+  RAW_IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME: ${{ github.repository }}
   TAG: ${{ github.sha }}
   REGISTRY: ghcr.io
 
 jobs:
   build:
-    name: ⚙️ Build, Test & Publish
+    name: ⚙️ Build Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,15 +33,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🔨 Build Docker image
+        run: |
+          docker build -t test-image:latest .
+
       - name: 🧲 Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.RAW_IMAGE_NAME }}
 
-      - name: 🔨 Build Docker image (local test)
-        run: |
-          docker build -t test-image:latest .
+  test:
+    name: 🧪 Test Docker Container Health
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
 
       - name: 🧪 Run container and wait for healthcheck
         run: |
@@ -64,14 +76,29 @@ jobs:
       - name: 🧹 Stop test container
         run: docker rm -f test-container
 
-      - name: 🚀 Build and Push Docker image
+  push:
+    name: 🚀 Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      packages: write
+
+    steps:
+      - name: 👤 Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          tags: ${{ env.REGISTRY }}/$(echo "${{ env.RAW_IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
