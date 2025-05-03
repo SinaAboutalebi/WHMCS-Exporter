@@ -1,0 +1,35 @@
+# Node dependencies (will be installed inside the container)
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Logs
+logs
+*.log
+
+# OS/system files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist
+build
+
+# Environment files (optional - only if you don’t need them inside the image)
+.env
+.env.* 
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+
+# Git
+.git
+.gitignore
+
+# Test files
+__tests__/
+coverage/
+*.test.js
+*.spec.js
