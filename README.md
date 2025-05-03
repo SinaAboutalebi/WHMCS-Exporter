@@ -33,7 +33,7 @@ This project uses Docker to containerize the applicatioYou can now configure Pro
 
 2. **Set Up Environment Variables**
 
-   **Option 1**: Using `.env` File
+   **Option 1**: Using `.env` File;
    Create a `.env` file in the project root directory with the following content:
 
    ```bash
@@ -45,7 +45,7 @@ This project uses Docker to containerize the applicatioYou can now configure Pro
    PORT=9200
    ```
 
-   **Option 2:** Using Docker Compose
+   **Option 2:** Using Docker Compose;
    Alternatively, if you are using Docker Compose, you can configure the environment variables directly in the `docker-compose.yml` file:
 
    ```yaml
