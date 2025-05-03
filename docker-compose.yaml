@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  whmcs-exporter:
+    build: .
+    container_name: whmcs-exporter
+    ports:
+      - "9200:9200"
+    environment:
+      - NODE_ENV=production
+      - PORT=9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
